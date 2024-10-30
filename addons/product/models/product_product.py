@@ -316,6 +316,7 @@ class ProductProduct(models.Model):
     def unlink(self):
         unlink_products = self.env['product.product']
         unlink_templates = self.env['product.template']
+        self.packaging_ids.unlink()
         for product in self:
             # If there is an image set on the variant and no image set on the
             # template, move the image to the template.
@@ -516,7 +517,7 @@ class ProductProduct(models.Model):
                 domain = expression.AND([args, domain])
                 product_ids = list(self._search(domain, limit=limit, access_rights_uid=name_get_uid))
             if not product_ids and operator in positive_operators:
-                ptrn = re.compile('(\[(.*?)\])')
+                ptrn = re.compile(r'(\[(.*?)\])')
                 res = ptrn.search(name)
                 if res:
                     product_ids = list(self._search([('default_code', '=', res.group(2))] + args, limit=limit, access_rights_uid=name_get_uid))
@@ -555,7 +556,7 @@ class ProductProduct(models.Model):
         return {
             'name': _('Price Rules'),
             'view_mode': 'tree,form',
-            'views': [(self.env.ref('product.product_pricelist_item_tree_view_from_product').id, 'tree'), (False, 'form')],
+            'views': [(self.env.ref('product.product_pricelist_item_tree_view_from_product').id, 'tree')],
             'res_model': 'product.pricelist.item',
             'type': 'ir.actions.act_window',
             'target': 'current',
@@ -698,6 +699,9 @@ class ProductProduct(models.Model):
                                                           and product.product_tmpl_id.product_variant_ids)).mapped('product_tmpl_id')
         (tmpl_to_deactivate + tmpl_to_activate).toggle_active()
         return result
+
+    def get_contextual_price(self):
+        return self._get_contextual_price()
 
     def _get_contextual_price(self):
         self.ensure_one()
